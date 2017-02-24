@@ -41,47 +41,55 @@ server.register([Bell, AuthCookie], function (err) {
             config: {
                 auth: 'github-oauth',
                 handler: function (request, reply) {
-                    console.log(request.auth);
-                    if ( request.auth.isAuthenticated) {
-                        request.auth.session.set( request.auth.credentials );
-                        return reply( 'Hello' + request.auth.credentials.profile.displayName );
+                    if ( request.auth.isAuthenticated ) {
+                        request.cookieAuth.set( request.auth.credentials );
+                        return reply( 'Hello ' + request.auth.credentials.profile.username + ' :)' );
                     }
 
                     // Reach out to GitHub, ask the user for permission for their information
                     // if granted, response with their name
-                    reply( 'Not logged int.. ' ).code(401);
+                    reply( 'Not logged in.. ' ).code(401);
                 }
             }
         }, {
             method: 'GET',
             path: '/account',
             config: {
+                auth: {
+                    mode: 'optional'
+                },
                 handler: function (request, reply) {
+                    if ( request.auth.isAuthenticated ) {
+                        return reply(request.auth.credentials.profile);
+                    }
 
-                    // Show the account information if the have logged in already
-                    // otherwise, send a 491
-                    reply();
+                    reply( 'Not logged in..' ).code(401);
                 }
             }
         }, {
             method: 'GET',
             path: '/',
             config: {
+                auth: {
+                    mode: 'optional'
+                },
                 handler: function (request, reply) {
 
-                    // If the user is authenticated reply with their user name
-                    // otherwise, replay back with a generic message.
-                    reply();
+                    if (request.auth.isAuthenticated) {
+                        return reply('welcome back ' + request.auth.credentials.profile.username);
+                    }
+
+                    reply('hello stranger!');
                 }
             }
         }, {
             method: 'GET',
             path: '/logout',
             config: {
+                auth: false,
                 handler: function (request, reply) {
-
-                    // Clear the session information
-                    reply.redirect();
+                    request.cookieAuth.clear();
+                    reply.redirect('/');
                 }
             }
         }
